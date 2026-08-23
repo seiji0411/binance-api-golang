@@ -1,4 +1,4 @@
-# Binance-Ai-Golang
+# Binance-API-Golang
 Binance APIs for trading with Golang
 
 # Start

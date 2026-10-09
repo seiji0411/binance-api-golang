@@ -5,23 +5,16 @@ import (
 	binance2 "github.com/adshao/go-binance/v2"
 	"github.com/adshao/go-binance/v2/futures"
 	"github.com/davecgh/go-spew/spew"
-	"path/filepath"
+	"github.com/kjeih/go-binance-api"
 	"strconv"
 	"sync"
 	"testing"
 	"time"
 )
 
-func init() {
-	BasePath = "../../../"
-	Initialize()
-	logfile := filepath.Join("logs", time.Now().UTC().Format("2006_01_02_00_00_00")+".log")
-	Setup(logfile)
-}
-
 func subscribePrice() {
 	recv := make(chan futures.WsDepthEvent)
-	go SubscribeFuturesOrderbook("SOLBUSD", recv)
+	go binance_api.SubscribeFuturesOrderbook("SOLBUSD", recv)
 	for {
 		priceData := <-recv
 		bidPrice, _, err := priceData.Bids[0].Parse()
@@ -36,7 +29,7 @@ func subscribePrice() {
 
 func subscribeKPrice() {
 	recv := make(chan futures.WsKlineEvent)
-	go SubscribeFuturesKline("SOLBUSD", recv)
+	go binance_api.SubscribeFuturesKline("SOLBUSD", recv)
 	for {
 		priceData := <-recv
 		openPrice, err := strconv.ParseFloat(priceData.Kline.Open, 64)
@@ -55,7 +48,7 @@ func subscribeKPrice() {
 
 func subscribeSpotPrice(symbol string) {
 	recv := make(chan *binance2.WsPartialDepthEvent)
-	go SubscribeSpotPrice(symbol, recv)
+	go binance_api.SubscribeSpotPrice(symbol, recv)
 	for {
 		priceData := <-recv
 		bidPrice, _, err := priceData.Bids[0].Parse()
@@ -70,7 +63,7 @@ func subscribeSpotPrice(symbol string) {
 
 func subscribeSpotKlinePrice(symbol string) {
 	recv := make(chan *binance2.WsKlineEvent)
-	go SubscribeSpotKlinePrice(symbol, recv)
+	go binance_api.SubscribeSpotKlinePrice(symbol, recv)
 	for {
 		priceData := <-recv
 		openPrice, err := strconv.ParseFloat(priceData.Kline.Open, 64)
@@ -87,8 +80,8 @@ func subscribeSpotKlinePrice(symbol string) {
 	}
 }
 
-func getPosition() {
-	service := NewBinanceService()
+func getPosition(apiKey, secretKey string) {
+	service := binance_api.NewBinanceService(apiKey, secretKey)
 	pos, err := service.GetPosition("SOLBUSD")
 	if err != nil {
 		print(err)
@@ -97,8 +90,8 @@ func getPosition() {
 	}
 }
 
-func buy() {
-	service := NewBinanceService()
+func buy(apiKey, secretKey string) {
+	service := binance_api.NewBinanceService(apiKey, secretKey)
 	result, err := service.Buy("SOLBUSD", 1)
 	if err != nil {
 		print(err)
@@ -107,8 +100,8 @@ func buy() {
 	}
 }
 
-func sell() {
-	service := NewBinanceService()
+func sell(apiKey, secretKey string) {
+	service := binance_api.NewBinanceService(apiKey, secretKey)
 	result, err := service.Sell("SOLBUSD", 1)
 	if err != nil {
 		print(err)
@@ -117,17 +110,29 @@ func sell() {
 	}
 }
 
-func TestBinance(t *testing.T) {
+func TestPriceSubscription(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
-	//go subscribePrice()
-	//go subscribeKPrice()
 	go subscribeSpotPrice("USDCUSDT")
 	go subscribeSpotKlinePrice("USDCUSDT")
 	go subscribeSpotPrice("BUSDUSDT")
 	go subscribeSpotKlinePrice("BUSDUSDT")
 	wg.Wait()
-	//getPosition()
-	//buy()
+
 	time.Sleep(3 * time.Second)
+}
+
+var BINANCE_API_KEY = "apiKey"
+var BINANCE_SECRET_KEY = "secretKey"
+
+func TestPosition(t *testing.T) {
+	getPosition(BINANCE_API_KEY, BINANCE_SECRET_KEY)
+
+	buy(BINANCE_API_KEY, BINANCE_SECRET_KEY)
+	time.Sleep(3 * time.Second)
+
+	sell(BINANCE_API_KEY, BINANCE_SECRET_KEY)
+	time.Sleep(3 * time.Second)
+
+	getPosition(BINANCE_API_KEY, BINANCE_SECRET_KEY)
 }

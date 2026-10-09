@@ -16,9 +16,9 @@ type BinanceService struct {
 	Balances     map[string]int64
 }
 
-func NewBinanceService() *BinanceService {
-	futuresClient := binance.NewFuturesClient(Config.Binance.ApiKey, Config.Binance.SecretKey)
-	client := binance.NewClient(Config.Binance.ApiKey, Config.Binance.SecretKey)
+func NewBinanceService(apiKey, secretKey string) *BinanceService {
+	futuresClient := binance.NewFuturesClient(apiKey, secretKey)
+	client := binance.NewClient(apiKey, secretKey)
 	return &BinanceService{
 		Client:       client,
 		FutureClient: futuresClient,
@@ -37,7 +37,6 @@ func SubscribeFuturesOrderbook(symbol string, recv chan futures.WsDepthEvent) {
 	doneC, _, err := futures.WsPartialDepthServeWithRate(symbol, 5, 100*time.Millisecond, wsDepthHandler, errHandler)
 	if err != nil {
 		panic(err.Error())
-		return
 	}
 	<-doneC
 }
@@ -52,7 +51,6 @@ func SubscribeSpotPrice(symbol string, recv chan *binance.WsPartialDepthEvent) {
 	doneC, _, err := binance.WsPartialDepthServe100Ms(symbol, "5", wsDepthHandler, errHandler)
 	if err != nil {
 		panic(err.Error())
-		return
 	}
 	<-doneC
 }
@@ -67,7 +65,6 @@ func SubscribeSpotKlinePrice(symbol string, recv chan *binance.WsKlineEvent) {
 	doneC, _, err := binance.WsKlineServe(symbol, "1s", wsDepthHandler, errHandler)
 	if err != nil {
 		panic(err.Error())
-		return
 	}
 	<-doneC
 }
@@ -82,7 +79,6 @@ func SubscribeFuturesKline(symbol string, recv chan futures.WsKlineEvent) {
 	doneC, _, err := futures.WsKlineServe(symbol, "1m", wsKlineHandler, errHandler)
 	if err != nil {
 		panic(err.Error())
-		return
 	}
 	<-doneC
 }
@@ -98,7 +94,6 @@ func (b *BinanceService) SubscribeFutureUserData() {
 }
 
 func (b *BinanceService) GetPosition(symbol string) (float64, error) {
-	// if !config.Config.Dev.Debug {
 	res, err := b.FutureClient.NewGetPositionRiskService().Symbol(symbol).Do(context.Background())
 	if err != nil {
 		return 0, err
@@ -150,7 +145,6 @@ func (b *BinanceService) NewOrder(
 		Do(context.Background())
 
 	if err != nil {
-		Outlog("Binance: Failed to create order" + err.Error())
 		return nil, err
 	}
 	result := &FutureOrder{}
